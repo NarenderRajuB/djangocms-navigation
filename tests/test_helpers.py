@@ -5,7 +5,12 @@ from cms.test_utils.util.fuzzy_int import FuzzyInt
 
 from djangocms_versioning.constants import PUBLISHED
 
-from djangocms_navigation.helpers import get_navigation_node_for_content_object
+from djangocms_navigation.helpers import (
+    get_navigation_node_for_content_object,
+    get_root_node,
+    get_site_menu_content
+)
+from djangocms_navigation.models import MenuContent
 from djangocms_navigation.test_utils import factories
 from djangocms_navigation.test_utils.polls.models import Poll, PollContent
 
@@ -132,6 +137,25 @@ class NavigationContentTypeSearchTestCase(CMSTestCase):
         result = get_navigation_node_for_content_object(menu_contents, poll_content)
 
         self.assertEqual(result, grandchild2)
+
+    def test_root_node_of_page(self):
+        """
+        Nearest root node for a page from the menu
+        """
+        page_content_aaa = factories.PageContentWithVersionFactory(
+            language=self.language, version__created_by=self.get_superuser()
+        )
+        page_content = factories.PageContentWithVersionFactory(
+            language=self.language, version__created_by=self.get_superuser()
+        )
+        menu_contents = factories.MenuContentFactory()
+        child1 = factories.ChildMenuItemFactory(parent=menu_contents.root, content=page_content_aaa)
+        factories.ChildMenuItemFactory(parent=menu_contents.root)
+        grandchild = factories.ChildMenuItemFactory(parent=child1)
+        grandchild2 = factories.ChildMenuItemFactory(parent=grandchild, content=page_content.page)
+        result = get_root_node(grandchild2, menu_contents)
+
+        self.assertEqual(result, child1)
 
 
 class TestNavigationPerformance(CMSTestCase):
