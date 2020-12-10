@@ -41,9 +41,9 @@ def forwards(apps, schema_editor):
                             object_id=obj.pk,
                         )
                     else:
-                        obj_placeholder_field.content_type_id = cur_ct_obj.pk,
+                        obj_placeholder_field.content_type_id = cur_ct_obj.pk
                         obj_placeholder_field.object_id = obj.pk
-                        obj.save()
+                        obj_placeholder_field.save()
 
 
 class Migration(migrations.Migration):

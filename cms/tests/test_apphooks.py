@@ -5,7 +5,9 @@ import sys
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.sites.models import Site
+from django.core import checks
 from django.core.cache import cache
+from django.core.checks.urls import check_url_config
 from django.test.utils import override_settings
 from django.urls import NoReverseMatch, clear_url_caches, resolve, reverse
 from django.utils import six
@@ -102,6 +104,15 @@ class ApphooksTestCase(CMSTestCase):
 
         return titles
 
+    @override_settings(ROOT_URLCONF='cms.test_utils.project.fourth_urls_for_apphook_tests')
+    def test_check_url_config(self):
+        """
+        Test for urls config check.
+        """
+        self.apphook_clear()
+        result = check_url_config(None)
+        self.assertEqual(len(result), 0)
+
     @override_settings(CMS_APPHOOKS=['%s.%s' % (APP_MODULE, APP_NAME)])
     def test_explicit_apphooks(self):
         """
@@ -147,6 +158,17 @@ class ApphooksTestCase(CMSTestCase):
         response = self.client.get('/en/blankapp/')
         self.assertTemplateUsed(response, 'nav_playground.html')
 
+        self.apphook_clear()
+
+    @override_settings(ROOT_URLCONF='cms.test_utils.project.urls_for_apphook_tests')
+    def test_apphook_does_not_crash_django_checks(self):
+        # This test case reproduced the situation causing the error reported in issue #6717.
+        self.apphook_clear()
+        superuser = get_user_model().objects.create_superuser('admin', 'admin@admin.com', 'admin')
+        create_page("apphooked-page", "nav_playground.html", "en",
+                    created_by=superuser, apphook="SampleApp")
+        self.reload_urls()
+        checks.run_checks()
         self.apphook_clear()
 
     @override_settings(ROOT_URLCONF='cms.test_utils.project.urls_for_apphook_tests')
